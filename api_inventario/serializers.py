@@ -1,57 +1,95 @@
 from rest_framework import serializers
+
 from .models import (
-    CategoriaProducto, Producto, Inventario, 
-    InventarioProductos, TipoMovimiento, Movimiento, 
-    Ajuste, Transferencia
+    CategoriaProducto,
+    Producto,
+    Inventario,
+    InventarioProductos,
+    TipoMovimiento,
+    Movimiento,
+    Ajuste,
+    Transferencia
 )
 
 # ==========================================
-# Serializer CategoriaProducto
+# SERIALIZER BASE AUDITORIA
 # ==========================================
-class CategoriaProductoSerializer(serializers.ModelSerializer):
+class AuditoriaSerializer(serializers.ModelSerializer):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        request = self.context.get('request')
+
+        if request:
+
+            if request.method == 'POST':
+
+                if 'usuario_modificacion' in self.fields:
+                    self.fields['usuario_modificacion'].read_only = True
+
+            elif request.method in ['PUT', 'PATCH']:
+
+                if 'usuario_creacion' in self.fields:
+                    self.fields['usuario_creacion'].read_only = True
+
+                if 'usuario_modificacion' in self.fields:
+                    self.fields['usuario_modificacion'].required = True
+
+
+# ==========================================
+# CATEGORIA PRODUCTO
+# ==========================================
+class CategoriaProductoSerializer(AuditoriaSerializer):
+
     class Meta:
         model = CategoriaProducto
         fields = '__all__'
 
 
 # ==========================================
-# Serializers Producto
+# PRODUCTOS
 # ==========================================
-class ProductoSerializer(serializers.ModelSerializer):
-    """Maneja la creación y edición usando IDs directos"""
+class ProductoSerializer(AuditoriaSerializer):
+
     class Meta:
         model = Producto
         fields = '__all__'
+
 
 class ProductoReadSerializer(serializers.ModelSerializer):
-    """Maneja la lectura anidando los datos de la categoría"""
-    categoria = CategoriaProductoSerializer(read_only=True)
-    
+
+    id_categoria_producto = CategoriaProductoSerializer(read_only=True)
+
     class Meta:
         model = Producto
         fields = '__all__'
 
 
 # ==========================================
-# Serializer Inventario (Bodegas)
+# INVENTARIO
 # ==========================================
-class InventarioSerializer(serializers.ModelSerializer):
+class InventarioSerializer(AuditoriaSerializer):
+
     class Meta:
         model = Inventario
         fields = '__all__'
 
 
 # ==========================================
-# Serializers InventarioProductos (Stock)
+# INVENTARIO PRODUCTOS
 # ==========================================
-class InventarioProductosSerializer(serializers.ModelSerializer):
+class InventarioProductosSerializer(AuditoriaSerializer):
+
     class Meta:
         model = InventarioProductos
         fields = '__all__'
+
 
 class InventarioProductosReadSerializer(serializers.ModelSerializer):
-    inventario = InventarioSerializer(read_only=True)
-    producto = ProductoSerializer(read_only=True)
+
+    id_inventario = InventarioSerializer(read_only=True)
+    id_producto = ProductoReadSerializer(read_only=True)
 
     class Meta:
         model = InventarioProductos
@@ -59,26 +97,29 @@ class InventarioProductosReadSerializer(serializers.ModelSerializer):
 
 
 # ==========================================
-# Serializer Tipos de Movimiento
+# TIPOS MOVIMIENTO
 # ==========================================
-class TipoMovimientoSerializer(serializers.ModelSerializer):
+class TipoMovimientoSerializer(AuditoriaSerializer):
+
     class Meta:
         model = TipoMovimiento
         fields = '__all__'
 
 
 # ==========================================
-# Serializers Movimientos
+# MOVIMIENTOS
 # ==========================================
-class MovimientoSerializer(serializers.ModelSerializer):
+class MovimientoSerializer(AuditoriaSerializer):
+
     class Meta:
         model = Movimiento
         fields = '__all__'
+
 
 class MovimientoReadSerializer(serializers.ModelSerializer):
-    inventario = InventarioSerializer(read_only=True)
-    producto = ProductoSerializer(read_only=True)
-    tipo_movimiento = TipoMovimientoSerializer(read_only=True)
+
+    id_tipo_movimiento = TipoMovimientoSerializer(read_only=True)
+    id_producto = ProductoReadSerializer(read_only=True)
 
     class Meta:
         model = Movimiento
@@ -86,15 +127,22 @@ class MovimientoReadSerializer(serializers.ModelSerializer):
 
 
 # ==========================================
-# Serializers Ajustes
+# AJUSTES
 # ==========================================
-class AjusteSerializer(serializers.ModelSerializer):
+class AjusteSerializer(AuditoriaSerializer):
+
     class Meta:
         model = Ajuste
         fields = '__all__'
+
+        extra_kwargs = {
+            'diferencia': {'read_only': True}
+        }
+
 
 class AjusteReadSerializer(serializers.ModelSerializer):
-    inventario_producto = InventarioProductosReadSerializer(read_only=True)
+
+    id_producto = ProductoReadSerializer(read_only=True)
 
     class Meta:
         model = Ajuste
@@ -102,17 +150,18 @@ class AjusteReadSerializer(serializers.ModelSerializer):
 
 
 # ==========================================
-# Serializers Transferencias
+# TRANSFERENCIAS
 # ==========================================
-class TransferenciaSerializer(serializers.ModelSerializer):
+class TransferenciaSerializer(AuditoriaSerializer):
+
     class Meta:
         model = Transferencia
         fields = '__all__'
 
+
 class TransferenciaReadSerializer(serializers.ModelSerializer):
-    inventario_origen = InventarioSerializer(read_only=True)
-    inventario_destino = InventarioSerializer(read_only=True)
-    producto = ProductoSerializer(read_only=True)
+
+    id_producto = ProductoReadSerializer(read_only=True)
 
     class Meta:
         model = Transferencia

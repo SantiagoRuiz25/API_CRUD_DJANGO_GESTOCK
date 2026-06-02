@@ -91,7 +91,7 @@ DATABASES = {
         'PORT': os.getenv('DB_PORT'),
         'OPTIONS': {
             # Esto obliga a Django a apuntar directo a tu esquema 'inventario_schema'
-            'options': f"-c search_path={os.getenv('DB_SCHEMA')}"
+            'options': f"-c search_path=inventario"
         }
     }
 }
