@@ -1,0 +1,5 @@
+.env*
+echo ".env" >> .gitignore
+echo "venv/" >> .gitignore
+echo "__pycache__/" >> .gitignore
+echo "db.sqlite3" >> .gitignore
